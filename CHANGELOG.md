@@ -4,6 +4,13 @@
 
 ### Major Features
 
+#### Version Compatibility Improvement
+- **Fixed**: Removed hardcoded engine version constraint from .uplugin file
+  - Plugin now compatible with UE 5.0 and later without version mismatch warnings
+  - Users can rebuild modules for their specific engine version without modification
+  - Eliminates "plugin was designed for build X" warnings
+  - Resolves compilation prompts when using different engine versions
+
 #### ZoneGraph Integration
 - **Added**: Full ZoneGraph and MassCity integration for AI vehicle navigation
   - Export RoadBuilder roads to ZoneGraph lane format
@@ -69,7 +76,7 @@
 
 ### Compatibility
 
-- **Unreal Engine**: 5.4.3+ (unchanged)
+- **Unreal Engine**: 5.0+ (compatible with all UE5 versions; tested primarily on 5.4.3+)
 - **New Requirements**: ZoneGraph plugin must be enabled
 - **Platforms**: Win64, Linux (unchanged)
 - **Dependencies**: GeoReferencing, PCG, ZoneGraph

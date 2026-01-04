@@ -46,6 +46,14 @@ See [ZONEGRAPH_INTEGRATION_GUIDE.md](./ZONEGRAPH_INTEGRATION_GUIDE.md) for detai
 
 These enhancements make RoadBuilder ideal for creating complete city road systems with proper traffic control infrastructure.
 
+### Compatibility
+
+- **Unreal Engine**: Compatible with UE 5.0 and later (tested primarily on 5.4.3+)
+- **Platforms**: Windows (Win64), Linux
+- **Required Plugins**: GeoReferencing, PCG, ZoneGraph (for ZoneGraph features)
+
+When loading the plugin in a different engine version, Unreal Engine will prompt you to rebuild the modules. Simply click "Yes" to rebuild, and the plugin will be compiled for your engine version.
+
 ### Video tutorials
 
 - https://www.youtube.com/watch?v=zGpPd4RAneQ&list=PLCWhWOgVmdwkOBGElYEPumnCXL12zEtwE
