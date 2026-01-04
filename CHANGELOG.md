@@ -1,5 +1,28 @@
 # Changelog - RoadBuilder
 
+## Version 0.7.1 - 2026-01-04
+
+### Bug Fixes
+
+#### UE 5.4.3 Compilation Fix
+- **Fixed**: Removed deprecated `EditorStyle` module dependency from RoadBuilderEditor.Build.cs
+  - Resolves "modules are missing or built with another version" error in UE 5.4.3
+  - EditorStyle module was deprecated/removed in UE 5.4+
+  - Code already uses FAppStyle (correct for UE 5.x) which is provided by Slate module
+  - Plugin now compiles successfully in UE 5.4.3 without modification
+
+#### Build Infrastructure
+- **Added**: `.gitignore` file to prevent accidental commits of compiled binaries
+  - Excludes Binaries, Intermediate, Saved, and DerivedDataCache folders
+  - Prevents version mismatch errors from committed binaries
+  - Follows Unreal Engine plugin best practices
+
+#### Documentation
+- **Updated**: Added troubleshooting section to README.md
+  - Clear instructions for resolving "modules are missing" errors
+  - Explains when and why module rebuilds are needed
+  - Confirms UE 5.4.3 compatibility
+
 ## Version 0.7.0 - 2026-01-04
 
 ### Major Features
