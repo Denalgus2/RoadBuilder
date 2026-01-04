@@ -27,7 +27,6 @@ namespace UnrealBuildTool.Rules
 					"Core",
                     "CoreUObject",
 					"DesktopPlatform",
-					"EditorStyle",
 					"EditorFramework",
                     "Engine",
 					"GeometryAlgorithms",

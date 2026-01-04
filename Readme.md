@@ -54,6 +54,22 @@ These enhancements make RoadBuilder ideal for creating complete city road system
 
 When loading the plugin in a different engine version, Unreal Engine will prompt you to rebuild the modules. Simply click "Yes" to rebuild, and the plugin will be compiled for your engine version.
 
+### Troubleshooting
+
+**"Modules are missing or built with another version" error:**
+
+If you see this error message when loading the plugin in UE 5.4.3:
+1. Delete any `Binaries` and `Intermediate` folders in the plugin directory if they exist
+2. When prompted by the editor, click "Yes" to rebuild the modules
+3. The plugin will automatically compile for your engine version
+
+This error typically occurs when:
+- The plugin was previously compiled for a different engine version
+- Pre-built binaries exist that don't match your engine version
+- The editor needs to rebuild the plugin for the first time
+
+The plugin source code is fully compatible with UE 5.4.3 and will compile successfully when rebuilt.
+
 ### Video tutorials
 
 - https://www.youtube.com/watch?v=zGpPd4RAneQ&list=PLCWhWOgVmdwkOBGElYEPumnCXL12zEtwE
