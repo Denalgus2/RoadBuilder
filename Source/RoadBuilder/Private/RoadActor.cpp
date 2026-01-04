@@ -8,18 +8,27 @@
 
 URoadStyle* URoadStyle::Create(URoadBoundary* SrcBoundary, int SrcSide, URoadBoundary* DstBoundary, int DstSide, bool SkipSidewalks, bool KeepLeftLanes, uint32 LeftLaneMarkingMask, uint32 RightLaneMarkingMask)
 {
+	if (!SrcBoundary || !DstBoundary)
+		return nullptr;
+
 	URoadStyle* Style = NewObject<URoadStyle>();
 	ARoadActor* SrcRoad = SrcBoundary->GetRoad();
 	ARoadActor* DstRoad = DstBoundary->GetRoad();
+	if (!SrcRoad || !DstRoad)
+		return Style;
+
 	URoadBoundary* SrcB = SrcBoundary;
 	URoadBoundary* DstB = DstBoundary;
 	Style->bHasGround = SrcRoad->bHasGround && DstRoad->bHasGround;
 	bool SrcMainRoad = DstRoad->Lanes.Num() < SrcRoad->Lanes.Num();
 	if (RightLaneMarkingMask & 1)
 	{
-		FBoundarySegment& Seg = SrcMainRoad ? DstB->Segments[0] : SrcB->Segments.Last();
-		Style->BaseCurveMark = Seg.LaneMarking;
-		Style->BaseCurveProps = Seg.Props;
+		if ((SrcMainRoad && DstB->Segments.Num() > 0) || (!SrcMainRoad && SrcB->Segments.Num() > 0))
+		{
+			FBoundarySegment& Seg = SrcMainRoad ? DstB->Segments[0] : SrcB->Segments.Last();
+			Style->BaseCurveMark = Seg.LaneMarking;
+			Style->BaseCurveProps = Seg.Props;
+		}
 	}
 	while (true)
 	{
@@ -28,20 +37,29 @@ URoadStyle* URoadStyle::Create(URoadBoundary* SrcBoundary, int SrcSide, URoadBou
 		URoadLane* DstL = DstB->GetLane(DstSide);
 		if (!SrcL || !DstL)
 			break;
+		if (SrcL->Segments.Num() == 0 || DstL->Segments.Num() == 0)
+			break;
 		if (SrcL->Segments.Last().LaneType != DstL->Segments[0].LaneType)
 			break;
 		SrcB = SrcL->GetBoundary(SrcSide);
 		DstB = DstL->GetBoundary(DstSide);
+		if (!SrcB || !DstB)
+			break;
 		LaneStyle.LaneType = DstL->Segments[0].LaneType;
 		if (SkipSidewalks && LaneStyle.LaneType == ELaneType::Sidewalk)
+			break;
+		if (DstB->LocalOffsets.Num() == 0)
 			break;
 		LaneStyle.Width = DstB->LocalOffsets[0].Offset;
 		LaneStyle.LaneShape = DstL->Segments[0].LaneShape;
 		if ((1 << Style->RightLanes.Num()) & RightLaneMarkingMask)
 		{
-			FBoundarySegment& Seg = SrcMainRoad ? DstB->Segments[0] : SrcB->Segments.Last();
-			LaneStyle.LaneMarking = Seg.LaneMarking;
-			LaneStyle.Props = Seg.Props;
+			if ((SrcMainRoad && DstB->Segments.Num() > 0) || (!SrcMainRoad && SrcB->Segments.Num() > 0))
+			{
+				FBoundarySegment& Seg = SrcMainRoad ? DstB->Segments[0] : SrcB->Segments.Last();
+				LaneStyle.LaneMarking = Seg.LaneMarking;
+				LaneStyle.Props = Seg.Props;
+			}
 		}
 		Style->RightLanes.Add(LaneStyle);
 	}
@@ -51,9 +69,12 @@ URoadStyle* URoadStyle::Create(URoadBoundary* SrcBoundary, int SrcSide, URoadBou
 		DstB = DstBoundary;
 		if (LeftLaneMarkingMask & 1)
 		{
-			FBoundarySegment& Seg = SrcMainRoad ? DstB->Segments[0] : SrcB->Segments.Last();
-			Style->BaseCurveMark = Seg.LaneMarking;
-			Style->BaseCurveProps = Seg.Props;
+			if ((SrcMainRoad && DstB->Segments.Num() > 0) || (!SrcMainRoad && SrcB->Segments.Num() > 0))
+			{
+				FBoundarySegment& Seg = SrcMainRoad ? DstB->Segments[0] : SrcB->Segments.Last();
+				Style->BaseCurveMark = Seg.LaneMarking;
+				Style->BaseCurveProps = Seg.Props;
+			}
 		}
 		while (SrcB != SrcRoad->BaseCurve)
 		{
@@ -62,21 +83,30 @@ URoadStyle* URoadStyle::Create(URoadBoundary* SrcBoundary, int SrcSide, URoadBou
 			URoadLane* DstL = DstB->GetLane(!DstSide);
 			if (!SrcL || !DstL)
 				break;
+			if (SrcL->Segments.Num() == 0 || DstL->Segments.Num() == 0)
+				break;
 			if (SrcL->Segments.Last().LaneType != DstL->Segments[0].LaneType)
 				break;
 			LaneStyle.LaneType = DstL->Segments[0].LaneType;
 		//	Sidewalk never comes from left side
 		//	if (SkipSidewalks && LaneStyle.LaneType == ELaneType::Sidewalk)
 		//		break;
+			if (DstB->LocalOffsets.Num() == 0)
+				break;
 			LaneStyle.Width = DstB->LocalOffsets[0].Offset;
 			LaneStyle.LaneShape = DstL->Segments[0].LaneShape;
 			SrcB = SrcL->GetBoundary(!SrcSide);
 			DstB = DstL->GetBoundary(!DstSide);
+			if (!SrcB || !DstB)
+				break;
 			if ((1 << Style->LeftLanes.Num()) & LeftLaneMarkingMask)
 			{
-				FBoundarySegment& Seg = SrcMainRoad ? DstB->Segments[0] : SrcB->Segments.Last();
-				LaneStyle.LaneMarking = Seg.LaneMarking;
-				LaneStyle.Props = Seg.Props;
+				if ((SrcMainRoad && DstB->Segments.Num() > 0) || (!SrcMainRoad && SrcB->Segments.Num() > 0))
+				{
+					FBoundarySegment& Seg = SrcMainRoad ? DstB->Segments[0] : SrcB->Segments.Last();
+					LaneStyle.LaneMarking = Seg.LaneMarking;
+					LaneStyle.Props = Seg.Props;
+				}
 			}
 			Style->LeftLanes.Add(LaneStyle);
 		}

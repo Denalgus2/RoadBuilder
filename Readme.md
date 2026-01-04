@@ -23,6 +23,17 @@ The roads created by RoadBuilder can be exported to OpenDrive format for use in 
 - SVG file import.
 - OpenDrive (xodr) format export.
 
+### City Building Enhancements
+
+- **Traffic Control System**: Support for traffic lights, stop signs, yield signs, and various traffic control elements
+- **Intersection Management**: Configure four-way, three-way (T-junctions), and roundabout intersections
+- **Traffic Light Configuration**: Customizable timing for green, yellow, and red phases
+- **Pedestrian Features**: Enhanced crosswalk support with configurable widths
+- **Traffic Sign Types**: Stop signs, yield signs, speed limits, no parking, one-way, and do not enter signs
+- **City Planning**: Improved error handling and validation for complex city road networks
+
+These enhancements make RoadBuilder ideal for creating complete city road systems with proper traffic control infrastructure.
+
 ### Video tutorials
 
 - https://www.youtube.com/watch?v=zGpPd4RAneQ&list=PLCWhWOgVmdwkOBGElYEPumnCXL12zEtwE

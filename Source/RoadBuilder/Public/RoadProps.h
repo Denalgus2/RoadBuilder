@@ -4,6 +4,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "RoadMesh.h"
+#include "TrafficControl.h"
 #include "RoadProps.generated.h"
 
 USTRUCT()
@@ -82,4 +83,12 @@ public:
 #endif
 	UPROPERTY(EditAnywhere, Category = Props)
 	TArray<FRoadProp> Props;
+
+	// Traffic control placements for city building
+	UPROPERTY(EditAnywhere, Category = "Traffic Control")
+	TArray<FTrafficControlPlacement> TrafficControls;
+
+	// Default traffic light configuration for intersections
+	UPROPERTY(EditAnywhere, Category = "Traffic Control")
+	FTrafficLightConfig DefaultTrafficLightConfig;
 };
