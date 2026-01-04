@@ -5,6 +5,7 @@
 #include "RoadActor.h"
 #include "RoadLane.h"
 #include "RoadBoundary.h"
+#include "ZoneGraphTypes.h"
 #include "ZoneShapeComponent.h"
 #include "ZoneGraphSubsystem.h"
 #include "Engine/World.h"
