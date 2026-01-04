@@ -34,12 +34,15 @@ namespace UnrealBuildTool.Rules
 					"GeometryCore",
                     "InputCore",
 					"MainFrame",
+					"MassNavigation",
 					"RenderCore",
 					"RoadBuilder",
                     "Slate",
                     "SlateCore",
 					"ToolMenus",
                     "UnrealEd",
+					"ZoneGraph",
+					"ZoneGraphAnnotations",
 					// ... add other public dependencies that you statically link with here ...
 				}
 				);

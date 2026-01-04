@@ -3,6 +3,7 @@
 
 #include "RoadActor.h"
 #include "RoadScene.h"
+#include "RoadZoneGraphExport.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/DecalComponent.h"
 
@@ -1813,5 +1814,11 @@ void URoadMeshComponent::PostEditUndo()
 {
 	SetStaticMesh(nullptr);
 	UStaticMeshComponent::PostEditUndo();
+}
+
+bool ARoadActor::ExportToZoneGraph(const FRoadZoneGraphConfig& Config, TArray<FRoadZoneLane>& OutLanes)
+{
+	// Forward to the exporter utility class
+	return URoadZoneGraphExporter::ExportRoadToZoneLanes(this, Config, OutLanes);
 }
 #endif

@@ -22,6 +22,18 @@ The roads created by RoadBuilder can be exported to OpenDrive format for use in 
 - Seamless and refined ground mesh generation along with spline boundary for PCG graph
 - SVG file import.
 - OpenDrive (xodr) format export.
+- **ZoneGraph Integration**: Export roads to Unreal Engine 5's ZoneGraph system for AI navigation with MassEntity and MassTraffic
+
+### ZoneGraph & AI Navigation
+
+- **Automatic Zone Export**: Convert RoadBuilder roads to ZoneGraph lanes for AI vehicle navigation
+- **MassTraffic Compatible**: Full integration with Unreal Engine's MassTraffic system for realistic traffic simulation
+- **Configurable Export**: Control lane width, point density, and which lanes to export
+- **ZoneShape Generation**: Automatically create ZoneShape actors from road networks
+- **Blueprint Support**: Full Blueprint API for ZoneGraph export workflows
+- **CitySample Ready**: Works seamlessly with Epic's CitySample project
+
+See [ZONEGRAPH_INTEGRATION_GUIDE.md](./ZONEGRAPH_INTEGRATION_GUIDE.md) for detailed usage instructions.
 
 ### City Building Enhancements
 
