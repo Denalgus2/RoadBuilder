@@ -19,6 +19,8 @@ void URoadProps::Generate(ARoadActor* Road, const FPolyline& Baseline, FRoadActo
 			FPolyline Line_Resample = Baseline.Resample(Prop.Spacing);
 			FPolyline Line_Offset = Line_Resample.Offset(FVector2D(Prop.Offset.Y, 0));
 			FPolyline Line = Line_Offset.Resample(Prop.Spacing);
+			if (Line.Points.Num() == 0)
+				continue;
 			float Length = Line.Points.Last().Dist;
 			int StartIndex = Line.GetPoint(Start * Length);
 			int EndIndex = FMath::Min(Line.GetPoint(End * Length), Line.Points.Num() - 2);
@@ -31,6 +33,8 @@ void URoadProps::Generate(ARoadActor* Road, const FPolyline& Baseline, FRoadActo
 				FVector Pos1 = Line.Points[i + 1].Pos;
 				FVector N = Pos1 - Pos0;
 				float Size = N.Size();
+				if (Size <= SMALL_NUMBER)
+					continue;
 				N /= Size;
 				FVector Scale(Prop.Fill ? Size / Prop.Spacing : 1, 1, 1);
 				FVector Up(0, 0, 1);
@@ -46,9 +50,19 @@ void URoadProps::Generate(ARoadActor* Road, const FPolyline& Baseline, FRoadActo
 				}
 				else if (UBlueprint* BP = Cast<UBlueprint>(Asset))
 				{
-					AActor* Actor = GetWorld()->SpawnActor<AActor>(BP->GeneratedClass);
-					Actor->SetActorTransform(Trans);
-					Actor->AttachToActor(Road, FAttachmentTransformRules::KeepWorldTransform);
+					if (Road && BP->GeneratedClass)
+					{
+						UWorld* World = Road->GetWorld();
+						if (World)
+						{
+							AActor* Actor = World->SpawnActor<AActor>(BP->GeneratedClass);
+							if (Actor)
+							{
+								Actor->SetActorTransform(Trans);
+								Actor->AttachToActor(Road, FAttachmentTransformRules::KeepWorldTransform);
+							}
+						}
+					}
 				}
 				else if (UMaterialInterface* Material = Cast<UMaterialInterface>(Asset))
 				{
