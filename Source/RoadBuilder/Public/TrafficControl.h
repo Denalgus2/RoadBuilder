@@ -37,8 +37,17 @@ struct FTrafficControlPlacement
 	UPROPERTY(EditAnywhere, Category = "Traffic Control")
 	float Scale = 1.0f;
 
+	// Static mesh asset for the traffic control element
 	UPROPERTY(EditAnywhere, Category = "Traffic Control")
-	UObject* CustomAsset = nullptr;
+	UStaticMesh* StaticMeshAsset = nullptr;
+
+	// Blueprint asset for interactive traffic control (e.g., animated traffic lights)
+	UPROPERTY(EditAnywhere, Category = "Traffic Control")
+	UBlueprint* BlueprintAsset = nullptr;
+
+	// Material for decal-based traffic control (e.g., road markings)
+	UPROPERTY(EditAnywhere, Category = "Traffic Control")
+	UMaterialInterface* DecalMaterial = nullptr;
 };
 
 // Struct for traffic light configuration

@@ -33,6 +33,8 @@ void URoadProps::Generate(ARoadActor* Road, const FPolyline& Baseline, FRoadActo
 				FVector Pos1 = Line.Points[i + 1].Pos;
 				FVector N = Pos1 - Pos0;
 				float Size = N.Size();
+				if (Size <= SMALL_NUMBER)
+					continue;
 				N /= Size;
 				FVector Scale(Prop.Fill ? Size / Prop.Spacing : 1, 1, 1);
 				FVector Up(0, 0, 1);
