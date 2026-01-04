@@ -285,6 +285,14 @@ float URoadZoneGraphExporter::CalculateLaneWidth(URoadLane* Lane)
 	float TotalWidth = 0.0f;
 	int32 SampleCount = FMath::Min(10, FMath::Min(LeftPoints.Num(), RightPoints.Num()));
 	
+	// Need at least 2 points to sample
+	if (SampleCount < 2)
+	{
+		// Fall back to single point measurement if we only have one point
+		float Width = FVector2D::Distance(LeftPoints[0], RightPoints[0]);
+		return Width;
+	}
+	
 	for (int32 i = 0; i < SampleCount; i++)
 	{
 		int32 Index = i * (LeftPoints.Num() - 1) / (SampleCount - 1);
