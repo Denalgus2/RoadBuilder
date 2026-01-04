@@ -312,6 +312,16 @@ public:
 	ARoadScene* GetScene();
 	AJunctionActor* GetJunction();
 	void ExportXodr(FXmlNode* XmlNode, int& RoadId, int& ObjectId, int JunctionId);
+	
+	/**
+	 * Export this road to ZoneGraph format for AI navigation
+	 * @param Config Configuration for the export
+	 * @param OutLanes Array to receive exported zone lanes
+	 * @return true if export was successful
+	 */
+	UFUNCTION(BlueprintCallable, Category = "RoadBuilder|ZoneGraph")
+	bool ExportToZoneGraph(const struct FRoadZoneGraphConfig& Config, TArray<struct FRoadZoneLane>& OutLanes);
+	
 	virtual void Serialize(FArchive& Ar) override;
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent);

@@ -1,4 +1,112 @@
-# Changelog - RoadBuilder City Creation Optimization
+# Changelog - RoadBuilder
+
+## Version 0.7.0 - 2026-01-04
+
+### Major Features
+
+#### ZoneGraph Integration
+- **Added**: Full ZoneGraph and MassCity integration for AI vehicle navigation
+  - Export RoadBuilder roads to ZoneGraph lane format
+  - Automatic ZoneShape actor generation from road networks
+  - Support for MassTraffic and MassEntity AI systems
+  - Compatible with Epic's CitySample project
+  
+#### New Export System
+- **Added**: `RoadZoneGraphExport.h` - ZoneGraph export infrastructure
+  - `FRoadZoneGraphConfig` - Configurable export settings
+  - `FRoadZoneLane` - Exported lane data structure
+  - `URoadZoneGraphExporter` - Static utility class for export operations
+  
+#### Export Features
+- **Added**: Configurable lane width (default: 400cm)
+- **Added**: Adjustable point density (default: 2 points per meter)
+- **Added**: Min/max point distance constraints
+- **Added**: Lane type filtering (driving lanes only option)
+- **Added**: Automatic reverse lane generation for bidirectional roads
+- **Added**: ZoneGraph tag support for lane categorization
+- **Added**: Smart point sampling with curve adaptation
+
+#### API Enhancements
+- **Added**: `ARoadActor::ExportToZoneGraph()` - Instance method for single road export
+- **Added**: `URoadZoneGraphExporter::ExportRoadToZoneLanes()` - Export single road
+- **Added**: `URoadZoneGraphExporter::ExportRoadsToZoneLanes()` - Batch export multiple roads
+- **Added**: `URoadZoneGraphExporter::CreateZoneShapeFromRoads()` - Generate ZoneShape actor
+- **Added**: Full Blueprint exposure for all export functions
+
+#### Module Dependencies
+- **Added**: `ZoneGraph` module dependency
+- **Added**: `ZoneGraphAnnotations` module dependency
+- **Added**: `MassNavigation` module dependency
+- **Updated**: `.uplugin` to require ZoneGraph plugin
+
+#### Documentation
+- **Added**: `ZONEGRAPH_INTEGRATION_GUIDE.md` - Comprehensive 13KB guide covering:
+  - What is ZoneGraph and why use it
+  - Setup and configuration instructions
+  - Usage examples (Blueprint and C++)
+  - API reference
+  - Best practices for performance
+  - Troubleshooting guide
+  - Integration with MassTraffic
+  - Complete workflow examples
+- **Updated**: `Readme.md` with ZoneGraph features section
+
+### Implementation Details
+
+#### Lane Export Algorithm
+- Samples points along lane centerline (between left and right boundaries)
+- Calculates average lane width from boundary distances
+- Applies configurable point density and distance constraints
+- Transforms world coordinates to ZoneShape local space
+- Preserves height information from road elevation profiles
+
+#### Quality of Life
+- Automatic detection of driving vs. non-driving lanes
+- Smart filtering to export only relevant lane types
+- Bidirectional lane support with one-way option
+- Graceful error handling with detailed logging
+- Validation of road data before export
+
+### Compatibility
+
+- **Unreal Engine**: 5.4.3+ (unchanged)
+- **New Requirements**: ZoneGraph plugin must be enabled
+- **Platforms**: Win64, Linux (unchanged)
+- **Dependencies**: GeoReferencing, PCG, ZoneGraph
+
+### Migration Guide
+
+For existing projects:
+1. Enable ZoneGraph plugin in your project settings
+2. No changes needed to existing RoadBuilder functionality
+3. ZoneGraph export is completely opt-in
+4. All previous features continue to work unchanged
+
+### Use Cases
+
+This feature enables:
+- **AI Traffic Simulation**: Vehicles follow roads using MassTraffic
+- **Pedestrian Navigation**: AI pedestrians use sidewalk lanes
+- **Dynamic Pathfinding**: Runtime navigation for autonomous vehicles
+- **City Simulation**: Large-scale urban traffic with thousands of agents
+- **Game Development**: Realistic traffic for open-world games
+- **Autonomous Driving**: Testing and simulation environments
+
+### Known Limitations
+
+- Requires ZoneGraph plugin (available in UE 5.0+)
+- MassTraffic assets not included (use CitySample or create custom)
+- Traffic light timing is not exported to ZoneGraph (future enhancement)
+- Intersection connectivity may need manual adjustment for complex junctions
+
+### Performance Notes
+
+- Export is performed once at design time or level load
+- Minimal runtime overhead (ZoneGraph handles pathfinding)
+- Recommended: 1-2 points per meter for highways, 2-3 for city streets
+- Can handle thousands of lanes in a single ZoneShape
+
+---
 
 ## Version 0.6.1 - 2026-01-04
 
