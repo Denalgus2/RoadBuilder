@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "0.6",
+	"VersionName": "0.7",
 	"FriendlyName": "RoadBuilder",
 	"Description": "RoadBuilder",
 	"Category": "Modeling",
@@ -10,7 +10,6 @@
 	"DocsURL": "",
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/be3bd259012f46fb9ca86a6cd9e9ec97",
 	"SupportURL": "https://github.com/fullike/RoadBuilder",
-	"EngineVersion": "5.4.3",
 	"CanContainContent": true,
 	"Installed": false,
 	"Modules": [
