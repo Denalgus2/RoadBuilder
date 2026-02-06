@@ -10,6 +10,7 @@
 #include "Factories/LaneShapeFactory.h"
 #include "Factories/RoadPropsFactory.h"
 #include "Factories/RoadStyleFactory.h"
+#include "Factories/RoadPresetFactory.h"
 #include "OSMActor.h"
 
 IMPLEMENT_MODULE(FRoadBuilderEditor, RoadBuilderEditor)
@@ -24,12 +25,14 @@ void FRoadBuilderEditor::StartupModule()
 	PolygonMarkStyleTypeActions = MakeShareable(new FPolygonMarkStyleTypeActions(Category));
 	RoadStyleTypeActions = MakeShareable(new FRoadStyleTypeActions(Category));
 	RoadPropsTypeActions = MakeShareable(new FRoadPropsTypeActions(Category));
+	RoadPresetTypeActions = MakeShareable(new FRoadPresetTypeActions(Category));
 	AssetTools.RegisterAssetTypeActions(LaneShapeTypeActions.ToSharedRef());
 	AssetTools.RegisterAssetTypeActions(LaneMarkStyleTypeActions.ToSharedRef());
 	AssetTools.RegisterAssetTypeActions(CrosswalkStyleTypeActions.ToSharedRef());
 	AssetTools.RegisterAssetTypeActions(PolygonMarkStyleTypeActions.ToSharedRef());
 	AssetTools.RegisterAssetTypeActions(RoadStyleTypeActions.ToSharedRef());
 	AssetTools.RegisterAssetTypeActions(RoadPropsTypeActions.ToSharedRef());
+	AssetTools.RegisterAssetTypeActions(RoadPresetTypeActions.ToSharedRef());
 	// This code will execute after your module is loaded into memory (but after global variables are initialized, of course.)
 	Extensions = MakeShareable(new FEditorExtensions);
 	Extensions->InstallHooks();
@@ -47,6 +50,7 @@ void FRoadBuilderEditor::ShutdownModule()
 	if (FModuleManager::Get().IsModuleLoaded("AssetTools"))
 	{
 		IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+		AssetTools.UnregisterAssetTypeActions(RoadPresetTypeActions.ToSharedRef());
 		AssetTools.UnregisterAssetTypeActions(RoadPropsTypeActions.ToSharedRef());
 		AssetTools.UnregisterAssetTypeActions(RoadStyleTypeActions.ToSharedRef());
 		AssetTools.UnregisterAssetTypeActions(PolygonMarkStyleTypeActions.ToSharedRef());

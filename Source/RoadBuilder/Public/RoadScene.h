@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Math/GenericOctree.h"
 #include "RoadBuilderSettings.h"
+#include "TrafficControl.h"
 #include "GroundActor.h"
 #include "RoadScene.generated.h"
 
@@ -234,6 +235,23 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = Junction)
 	TArray<FTurnRestriction> TurnRestrictions;
+
+	UPROPERTY(EditAnywhere, Category = "Traffic Control")
+	ETrafficControlType TrafficControlType = ETrafficControlType::None;
+
+	UPROPERTY()
+	TArray<ATrafficLightActor*> TrafficLights;
+
+	UPROPERTY()
+	TArray<ATrafficSignActor*> TrafficSigns;
+
+	UPROPERTY()
+	TArray<ATurnArrowActor*> TurnArrows;
+
+	void GenerateTrafficControl();
+	void CleanupTrafficControl();
+	void GenerateTurnArrows();
+	void CleanupTurnArrows();
 
 	TArray<FVector> DebugPoints;
 	TArray<FPolyline> DebugCurves;

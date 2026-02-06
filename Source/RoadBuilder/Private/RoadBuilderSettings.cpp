@@ -25,6 +25,8 @@ USettings_Global::USettings_Global(const FObjectInitializer& ObjectInitializer) 
 	BuildJunctions = 1;
 	BuildProps = 1;
 	BuildMassGraph = 0;
+	AutoGenerateTrafficControl = 0;
+	AutoGenerateTurnArrows = 0;
 	DisplayGateRadianPoints = 0;
 }
 
@@ -46,7 +48,12 @@ void USettings_RoadPlan::Apply()
 		USettings_RoadPlan* Data = GetMutableDefault<USettings_RoadPlan>();
 		Road->Modify();
 		Road->ClearLanes();
-		Road->InitWithStyle(Data->Style.LoadSynchronous());
+		URoadStyle* ResolvedStyle = nullptr;
+		if (URoadPreset* PresetObj = Data->Preset.LoadSynchronous())
+			ResolvedStyle = PresetObj->GenerateRoadStyle();
+		else
+			ResolvedStyle = Data->Style.LoadSynchronous();
+		Road->InitWithStyle(ResolvedStyle);
 		Road->UpdateCurve();
 		Road->GetScene()->Rebuild();
 	}

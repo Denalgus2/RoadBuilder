@@ -45,4 +45,5 @@ public:
 	TSharedPtr<IAssetTypeActions> PolygonMarkStyleTypeActions;
 	TSharedPtr<IAssetTypeActions> RoadStyleTypeActions;
 	TSharedPtr<IAssetTypeActions> RoadPropsTypeActions;
+	TSharedPtr<IAssetTypeActions> RoadPresetTypeActions;
 };

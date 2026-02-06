@@ -860,9 +860,159 @@ void AJunctionActor::ExportXodr(FXmlNode* XmlNode, int& RoadId, int& ObjectId)
 
 void AJunctionActor::Destroyed()
 {
+	CleanupTrafficControl();
+	CleanupTurnArrows();
 	for (FJunctionGate& Gate : Gates)
 		Gate.Clear();
 	AActor::Destroyed();
+}
+
+void AJunctionActor::CleanupTrafficControl()
+{
+	for (ATrafficLightActor* Light : TrafficLights)
+		if (Light)
+			Light->Destroy();
+	TrafficLights.Empty();
+	for (ATrafficSignActor* Sign : TrafficSigns)
+		if (Sign)
+			Sign->Destroy();
+	TrafficSigns.Empty();
+}
+
+void AJunctionActor::CleanupTurnArrows()
+{
+	for (ATurnArrowActor* Arrow : TurnArrows)
+		if (Arrow)
+			Arrow->Destroy();
+	TurnArrows.Empty();
+}
+
+void AJunctionActor::GenerateTrafficControl()
+{
+	CleanupTrafficControl();
+	if (TrafficControlType == ETrafficControlType::None)
+		return;
+
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	USettings_Global* Settings = GetMutableDefault<USettings_Global>();
+
+	for (int i = 0; i < Gates.Num(); i++)
+	{
+		FJunctionGate& Gate = Gates[i];
+		if (!Gate.IsInput())
+			continue;
+
+		FVector Pos = FVector(Gate.Road->GetPos(Gate.Dist), Gate.Road->GetHeight(Gate.Dist));
+		FVector Dir = Gate.Road->GetDir(Gate.Dist) * Gate.Sign;
+		FRotator Rot = Dir.Rotation();
+		FVector SpawnPos = Pos + Gate.Road->GetRight(Gate.Dist) * 400.0 * Gate.Sign;
+
+		if (TrafficControlType == ETrafficControlType::TrafficLight)
+		{
+			ATrafficLightActor* Light = World->SpawnActor<ATrafficLightActor>(SpawnPos, Rot);
+			if (Light)
+			{
+				Light->GateIndex = i;
+				Light->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+				if (UStaticMesh* Mesh = Settings->TrafficLightMesh.LoadSynchronous())
+					Light->PoleMesh->SetStaticMesh(Mesh);
+				// Offset phases so opposing traffic alternates
+				int InputCount = 0;
+				for (int j = 0; j < i; j++)
+					if (Gates[j].IsInput())
+						InputCount++;
+				float TotalCycle = Light->GreenDuration + Light->YellowDuration + Light->RedDuration;
+				Light->PhaseOffset = (InputCount % 2 == 0) ? 0.0f : Light->GreenDuration + Light->YellowDuration;
+				TrafficLights.Add(Light);
+			}
+		}
+		else if (TrafficControlType == ETrafficControlType::StopSign || TrafficControlType == ETrafficControlType::YieldSign)
+		{
+			ATrafficSignActor* Sign = World->SpawnActor<ATrafficSignActor>(SpawnPos, Rot);
+			if (Sign)
+			{
+				Sign->SignType = TrafficControlType;
+				Sign->GateIndex = i;
+				Sign->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+				UStaticMesh* Mesh = (TrafficControlType == ETrafficControlType::StopSign)
+					? Settings->StopSignMesh.LoadSynchronous()
+					: Settings->YieldSignMesh.LoadSynchronous();
+				if (Mesh)
+					Sign->SignMesh->SetStaticMesh(Mesh);
+				TrafficSigns.Add(Sign);
+			}
+		}
+	}
+}
+
+void AJunctionActor::GenerateTurnArrows()
+{
+	CleanupTurnArrows();
+
+	USettings_Global* Settings = GetMutableDefault<USettings_Global>();
+	if (!Settings->AutoGenerateTurnArrows)
+		return;
+
+	UStaticMesh* ArrowMesh = Settings->TurnArrowMesh.LoadSynchronous();
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	for (int i = 0; i < Gates.Num(); i++)
+	{
+		FJunctionGate& Gate = Gates[i];
+		if (!Gate.IsInput())
+			continue;
+
+		// For each input gate, determine which output gates it can reach
+		TArray<int> Destinations;
+		for (int j = 0; j < Gates.Num(); j++)
+		{
+			if (Gates[j].IsOutput() && IsTurnAllowed(i, j))
+				Destinations.Add(j);
+		}
+
+		if (Destinations.Num() == 0)
+			continue;
+
+		// Determine arrow type based on angular relationship
+		FVector InputDir = Gate.Road->GetDir(Gate.Dist) * Gate.Sign;
+		double InputAngle = FMath::Atan2(InputDir.Y, InputDir.X);
+
+		for (int d = 0; d < Destinations.Num(); d++)
+		{
+			FJunctionGate& OutGate = Gates[Destinations[d]];
+			FVector OutDir = OutGate.Road->GetDir(OutGate.Dist) * OutGate.Sign;
+			double OutAngle = FMath::Atan2(OutDir.Y, OutDir.X);
+			double AngleDiff = FMath::FindDeltaAngleRadians(InputAngle, OutAngle);
+
+			ETurnArrowType ArrowType = ETurnArrowType::Through;
+			if (AngleDiff > DOUBLE_PI / 6.0)
+				ArrowType = ETurnArrowType::Left;
+			else if (AngleDiff < -DOUBLE_PI / 6.0)
+				ArrowType = ETurnArrowType::Right;
+
+			// Place arrow on the road surface approaching the junction
+			double ArrowDist = Gate.Dist + Gate.Sign * 500.0; // 5m before the stop line
+			FVector ArrowPos = FVector(Gate.Road->GetPos(ArrowDist), Gate.Road->GetHeight(ArrowDist));
+			FRotator ArrowRot = (Gate.Road->GetDir(ArrowDist) * Gate.Sign).Rotation();
+
+			ATurnArrowActor* Arrow = World->SpawnActor<ATurnArrowActor>(ArrowPos, ArrowRot);
+			if (Arrow)
+			{
+				Arrow->ArrowType = ArrowType;
+				Arrow->GateIndex = i;
+				Arrow->LaneIndex = d;
+				Arrow->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+				if (ArrowMesh)
+					Arrow->ArrowMesh->SetStaticMesh(ArrowMesh);
+				TurnArrows.Add(Arrow);
+			}
+		}
+	}
 }
 
 ARoadScene::ARoadScene(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -1190,6 +1340,13 @@ void ARoadScene::Rebuild()
 	}
 	for (AJunctionActor* Junction : Junctions)
 		Junction->Build();
+	USettings_Global* GlobalSettings = GetMutableDefault<USettings_Global>();
+	for (AJunctionActor* Junction : Junctions)
+	{
+		Junction->GenerateTrafficControl();
+		if (GlobalSettings->AutoGenerateTurnArrows)
+			Junction->GenerateTurnArrows();
+	}
 	for (ARoadActor* Road : Roads)
 		Road->BuildMesh(RoadSlots[Road]);
 	GenerateGrounds(RoadSlots);

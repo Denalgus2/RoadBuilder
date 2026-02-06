@@ -9,6 +9,7 @@
 #include "DynamicMeshBuilder.h"
 #include "ScopedTransaction.h"
 #include "RoadEdModeToolkit.h"
+#include "RoadPreset.h"
 #include "Toolkits/ToolkitManager.h"
 
 IMPLEMENT_HIT_PROXY(HRoadProxy, HHitProxy);
@@ -332,7 +333,12 @@ bool FRoadTool_RoadPlan::HandleClick(FEditorViewportClient* InViewportClient, HH
 			if (!Road)
 			{
 				Scene->Modify();
-				Road = Scene->AddRoad(Data->Style.LoadSynchronous(), Data->BaseHeight);
+				URoadStyle* ResolvedStyle = nullptr;
+				if (URoadPreset* PresetObj = Data->Preset.LoadSynchronous())
+					ResolvedStyle = PresetObj->GenerateRoadStyle();
+				else
+					ResolvedStyle = Data->Style.LoadSynchronous();
+				Road = Scene->AddRoad(ResolvedStyle, Data->BaseHeight);
 			}
 			Road->Modify();
 			Road->InsertPoint((FVector2D&)Pos, PointIndex);

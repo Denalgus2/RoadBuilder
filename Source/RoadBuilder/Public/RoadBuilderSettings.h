@@ -7,6 +7,7 @@
 #include "LaneShape.h"
 #include "LaneMarkStyle.h"
 #include "RoadActor.h"
+#include "RoadPreset.h"
 #include "RoadBuilderSettings.generated.h"
 
 UCLASS(config = RoadBuilder)
@@ -60,6 +61,24 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = MassGraph, meta = (EditCondition = "BuildMassGraph"))
 	TSoftObjectPtr<UStaticMesh> NoTurnSignMesh;
 
+	UPROPERTY(config, EditAnywhere, Category = TrafficControl)
+	uint32 AutoGenerateTrafficControl : 1;
+
+	UPROPERTY(config, EditAnywhere, Category = TrafficControl)
+	uint32 AutoGenerateTurnArrows : 1;
+
+	UPROPERTY(config, EditAnywhere, Category = TrafficControl, meta = (EditCondition = "AutoGenerateTurnArrows"))
+	TSoftObjectPtr<UStaticMesh> TurnArrowMesh;
+
+	UPROPERTY(config, EditAnywhere, Category = TrafficControl, meta = (EditCondition = "AutoGenerateTrafficControl"))
+	TSoftObjectPtr<UStaticMesh> TrafficLightMesh;
+
+	UPROPERTY(config, EditAnywhere, Category = TrafficControl, meta = (EditCondition = "AutoGenerateTrafficControl"))
+	TSoftObjectPtr<UStaticMesh> StopSignMesh;
+
+	UPROPERTY(config, EditAnywhere, Category = TrafficControl, meta = (EditCondition = "AutoGenerateTrafficControl"))
+	TSoftObjectPtr<UStaticMesh> YieldSignMesh;
+
 	UPROPERTY(config, EditAnywhere, Category = Debug)
 	uint32 DisplayGateRadianPoints : 1;
 };
@@ -90,7 +109,10 @@ public:
 	UPROPERTY(config, EditAnywhere, Category = Road)
 	double BaseHeight = 0;
 
-	UPROPERTY(config, EditAnywhere, Category = Road)
+	UPROPERTY(config, EditAnywhere, Category = "Road (Simple)")
+	TSoftObjectPtr<URoadPreset> Preset;
+
+	UPROPERTY(config, EditAnywhere, Category = "Road (Advanced)")
 	TSoftObjectPtr<URoadStyle> Style;
 };
 
