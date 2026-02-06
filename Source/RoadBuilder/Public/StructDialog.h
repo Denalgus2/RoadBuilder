@@ -5,7 +5,7 @@
 #if WITH_EDITOR
 #include "Widgets/SCompoundWidget.h"
 #include "IStructureDetailsView.h"
-#include "Interfaces/IMainFrameModule.h"
+#include "Framework/Application/SlateApplication.h"
 
 class ROADBUILDER_API SObjectDialog : public SCompoundWidget
 {
@@ -45,12 +45,7 @@ public:
 template<class T>
 bool IsDataDialogProceed(T* Obj)
 {
-	TSharedPtr<SWindow> ParentWindow;
-	if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
-	{
-		IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
-		ParentWindow = MainFrame.GetParentWindow();
-	}
+	TSharedPtr<SWindow> ParentWindow = FSlateApplication::Get().GetActiveTopLevelWindow();
 	TSharedRef<SWindow> Window = SNew(SWindow)
 		.Title(FText::FromString(T::StaticClass()->GetName()))
 		.SizingRule(ESizingRule::Autosized);
@@ -68,12 +63,7 @@ bool IsDataDialogProceed(T* Obj)
 template<class T>
 bool IsDataDialogProceed(T& Data)
 {
-	TSharedPtr<SWindow> ParentWindow;
-	if (FModuleManager::Get().IsModuleLoaded("MainFrame"))
-	{
-		IMainFrameModule& MainFrame = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
-		ParentWindow = MainFrame.GetParentWindow();
-	}
+	TSharedPtr<SWindow> ParentWindow = FSlateApplication::Get().GetActiveTopLevelWindow();
 	TSharedRef<SWindow> Window = SNew(SWindow)
 		.Title(FText::FromString(T::StaticStruct()->GetName()))
 		.SizingRule(ESizingRule::Autosized);

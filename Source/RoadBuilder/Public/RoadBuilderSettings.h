@@ -3,10 +3,11 @@
 
 #pragma once
 #include "Engine/DeveloperSettings.h"
+#include "Engine/StaticMesh.h"
 #include "LaneShape.h"
 #include "LaneMarkStyle.h"
 #include "RoadActor.h"
-#include "Settings.generated.h"
+#include "RoadBuilderSettings.generated.h"
 
 UCLASS(config = RoadBuilder)
 class ROADBUILDER_API USettings_Base : public UObject
@@ -52,6 +53,12 @@ public:
 
 	UPROPERTY(config, EditAnywhere, Category = Build)
 	uint32 BuildProps : 1;
+
+	UPROPERTY(config, EditAnywhere, Category = MassGraph)
+	uint32 BuildMassGraph : 1;
+
+	UPROPERTY(config, EditAnywhere, Category = MassGraph, meta = (EditCondition = "BuildMassGraph"))
+	TSoftObjectPtr<UStaticMesh> NoTurnSignMesh;
 
 	UPROPERTY(config, EditAnywhere, Category = Debug)
 	uint32 DisplayGateRadianPoints : 1;

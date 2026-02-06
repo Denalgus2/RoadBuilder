@@ -2,9 +2,14 @@
 // Copyright 2024. All Rights Reserved.
 
 #include "RoadScene.h"
+#include "RoadBuilder.h"
 #include "XmlFile.h"
 #include "Engine/Level.h"
 #include "Engine/World.h"
+#include "ZoneShapeComponent.h"
+#include "ZoneGraphTypes.h"
+#include "ZoneGraphSettings.h"
+#include "Components/InstancedStaticMeshComponent.h"
 
 void FJunctionLink::CreateRoad(AJunctionActor* Parent)
 {
@@ -423,8 +428,66 @@ void AJunctionActor::Build()
 		FJunctionGate& Gate = Gates[i];
 		for (int j = 0; j < Gates.Num(); j++)
 		{
-			FJunctionGate& Next = Gates[(i + j) % Gates.Num()];
+			int TargetGateIdx = (i + j) % Gates.Num();
+			if (Gate.IsInput() && j != 0 && j != 1 && !IsTurnAllowed(i, TargetGateIdx))
+			{
+				// Restricted turn: destroy existing link road if any
+				if (j < Gate.Links.Num() && Gate.Links[j].Road)
+					Gate.Links[j].Destroy();
+				continue;
+			}
+			FJunctionGate& Next = Gates[TargetGateIdx];
 			BuildLink(Gate, Next, j);
+		}
+	}
+	// Place no-turn signs for restricted turns
+	// First, remove any previously generated sign ISMCs
+	{
+		TArray<UInstancedStaticMeshComponent*> OldISMCs;
+		GetComponents<UInstancedStaticMeshComponent>(OldISMCs);
+		for (UInstancedStaticMeshComponent* Comp : OldISMCs)
+		{
+			Comp->DestroyComponent();
+		}
+	}
+	USettings_Global* Settings = GetMutableDefault<USettings_Global>();
+	if (UStaticMesh* SignMesh = Settings->NoTurnSignMesh.LoadSynchronous())
+	{
+		for (const FTurnRestriction& Restriction : TurnRestrictions)
+		{
+			if (Restriction.FromGateIndex >= 0 && Restriction.FromGateIndex < Gates.Num())
+			{
+				FJunctionGate& Gate = Gates[Restriction.FromGateIndex];
+				int SrcSide = Gate.Sign > 0 ? 1 : 0;
+				URoadBoundary* SrcEdge = Gate.Road->GetRoadEdge(SrcSide);
+				FVector SignPos = SrcEdge->GetPos(Gate.Dist);
+				FVector SignDir = Gate.Road->GetDir(Gate.Dist) * Gate.Sign;
+				FRotator SignRot = SignDir.Rotation();
+				// Offset sign to the side of the road
+				FVector Right(-SignDir.Y, SignDir.X, 0);
+				SignPos += Right * 150.0;
+				SignPos.Z += 300.0;
+				FTransform SignTransform(SignRot, SignPos);
+				UInstancedStaticMeshComponent* ISMC = nullptr;
+				TArray<UInstancedStaticMeshComponent*> ISMCs;
+				GetComponents<UInstancedStaticMeshComponent>(ISMCs);
+				for (UInstancedStaticMeshComponent* Comp : ISMCs)
+				{
+					if (Comp->GetStaticMesh() == SignMesh)
+					{
+						ISMC = Comp;
+						break;
+					}
+				}
+				if (!ISMC)
+				{
+					ISMC = NewObject<UInstancedStaticMeshComponent>(this);
+					ISMC->SetStaticMesh(SignMesh);
+					ISMC->SetupAttachment(GetRootComponent());
+					ISMC->RegisterComponent();
+				}
+				ISMC->AddInstance(SignTransform);
+			}
 		}
 	}
 	BuildGoreMarkings();
@@ -745,6 +808,38 @@ TArray<FJunctionSlot> AJunctionActor::GetSlots(ARoadActor* Road)
 		i++;
 	}
 	return MoveTemp(Slots);
+}
+
+bool AJunctionActor::IsTurnAllowed(int FromGate, int ToGate) const
+{
+	for (const FTurnRestriction& Restriction : TurnRestrictions)
+	{
+		if (Restriction.FromGateIndex == FromGate && Restriction.ToGateIndex == ToGate)
+			return false;
+	}
+	return true;
+}
+
+void AJunctionActor::AddTurnRestriction(int FromGate, int ToGate)
+{
+	if (IsTurnAllowed(FromGate, ToGate))
+	{
+		FTurnRestriction& R = TurnRestrictions[TurnRestrictions.AddDefaulted()];
+		R.FromGateIndex = FromGate;
+		R.ToGateIndex = ToGate;
+	}
+}
+
+void AJunctionActor::RemoveTurnRestriction(int FromGate, int ToGate)
+{
+	for (int i = 0; i < TurnRestrictions.Num(); i++)
+	{
+		if (TurnRestrictions[i].FromGateIndex == FromGate && TurnRestrictions[i].ToGateIndex == ToGate)
+		{
+			TurnRestrictions.RemoveAt(i);
+			return;
+		}
+	}
 }
 
 ARoadScene* AJunctionActor::GetScene()
@@ -1102,6 +1197,10 @@ void ARoadScene::Rebuild()
 	{
 		Ground->BuildMesh(RoadSlots);
 	}
+	if (GetMutableDefault<USettings_Global>()->BuildMassGraph)
+	{
+		GenerateMassGraph(RoadSlots);
+	}
 }
 
 void ARoadScene::GenerateGrounds(TMap<ARoadActor*, TArray<FJunctionSlot>>& RoadSlots)
@@ -1202,6 +1301,215 @@ void ARoadScene::GenerateGrounds(TMap<ARoadActor*, TArray<FJunctionSlot>>& RoadS
 		else
 			i++;
 	}
+}
+
+void ARoadScene::CleanupMassGraph()
+{
+	for (AActor* Actor : MassGraphActors)
+	{
+		if (Actor)
+			Actor->Destroy();
+	}
+	MassGraphActors.Empty();
+}
+
+static AActor* CreateZoneShapeForLane(UWorld* World, AActor* Parent, ARoadActor* Road, URoadLane* Lane, double StartDist, double EndDist)
+{
+	if (!Road || !Lane || !Lane->LeftBoundary || !Lane->RightBoundary)
+		return nullptr;
+	if (FMath::IsNearlyEqual(StartDist, EndDist))
+		return nullptr;
+
+	AActor* ShapeActor = World->SpawnActor<AActor>();
+	if (!ShapeActor)
+		return nullptr;
+
+	USceneComponent* Root = NewObject<USceneComponent>(ShapeActor, TEXT("Root"));
+	ShapeActor->SetRootComponent(Root);
+	Root->RegisterComponent();
+	ShapeActor->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
+
+	UZoneShapeComponent* ShapeComp = NewObject<UZoneShapeComponent>(ShapeActor, TEXT("ZoneShape"));
+	ShapeComp->SetupAttachment(Root);
+	ShapeComp->RegisterComponent();
+
+	// Compute lane centerline points
+	FPolyline& LeftCurve = Lane->LeftBoundary->Curve;
+	bool bReverse = StartDist > EndDist;
+	double ActualStart = bReverse ? EndDist : StartDist;
+	double ActualEnd = bReverse ? StartDist : EndDist;
+
+	TArray<FVector> CenterlinePoints;
+	int StartIdx = LeftCurve.GetPoint(ActualStart);
+	int EndIdx = LeftCurve.GetPoint(ActualEnd);
+	if (StartIdx >= LeftCurve.Points.Num() - 1)
+		StartIdx = LeftCurve.Points.Num() - 2;
+
+	// Add start point
+	{
+		FVector LeftPos = Lane->LeftBoundary->GetPos(ActualStart);
+		FVector RightPos = Lane->RightBoundary->GetPos(ActualStart);
+		CenterlinePoints.Add((LeftPos + RightPos) * 0.5);
+	}
+
+	// Add intermediate points
+	for (int i = StartIdx + 1; i <= EndIdx && i < LeftCurve.Points.Num(); i++)
+	{
+		double Dist = LeftCurve.Points[i].Dist;
+		if (Dist > ActualStart && Dist < ActualEnd)
+		{
+			FVector LeftPos = Lane->LeftBoundary->GetPos(Dist);
+			FVector RightPos = Lane->RightBoundary->GetPos(Dist);
+			CenterlinePoints.Add((LeftPos + RightPos) * 0.5);
+		}
+	}
+
+	// Add end point
+	{
+		FVector LeftPos = Lane->LeftBoundary->GetPos(ActualEnd);
+		FVector RightPos = Lane->RightBoundary->GetPos(ActualEnd);
+		CenterlinePoints.Add((LeftPos + RightPos) * 0.5);
+	}
+
+	if (bReverse)
+		Algo::Reverse(CenterlinePoints);
+
+	if (CenterlinePoints.Num() < 2)
+	{
+		ShapeActor->Destroy();
+		return nullptr;
+	}
+
+	// Configure the zone shape via ZoneGraph API
+	double LaneWidth = Lane->GetWidth((ActualStart + ActualEnd) * 0.5);
+	ShapeComp->SetShapeType(FZoneShapeType::Spline);
+
+	// Build lane profile and set as common profile
+	FZoneLaneProfile Profile;
+	Profile.Name = TEXT("RoadBuilderLane");
+	FZoneLaneDesc LaneDesc;
+	LaneDesc.Width = LaneWidth;
+	LaneDesc.Direction = EZoneLaneDirection::Forward;
+	Profile.Lanes.Add(LaneDesc);
+	ShapeComp->SetCommonLaneProfile(FZoneLaneProfileRef(Profile));
+
+	TArray<FZoneShapePoint>& ShapePoints = ShapeComp->GetMutablePoints();
+	ShapePoints.Reset();
+	ShapePoints.Reserve(CenterlinePoints.Num());
+	for (int i = 0; i < CenterlinePoints.Num(); i++)
+	{
+		FZoneShapePoint Pt(CenterlinePoints[i]);
+		Pt.Type = (i == 0 || i == CenterlinePoints.Num() - 1) ? FZoneShapePointType::Sharp : FZoneShapePointType::AutoBezier;
+		Pt.InnerTurnRadius = 0.0f;
+		ShapePoints.Add(Pt);
+	}
+
+	return ShapeActor;
+}
+
+void ARoadScene::GenerateMassGraph(TMap<ARoadActor*, TArray<FJunctionSlot>>& RoadSlots)
+{
+	CleanupMassGraph();
+
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	// Generate zone shapes for each road's driving lanes
+	for (ARoadActor* Road : Roads)
+	{
+		if (FMath::IsNearlyZero(Road->Length()))
+			continue;
+
+		TArray<FJunctionSlot>& Slots = RoadSlots[Road];
+
+		for (URoadLane* Lane : Road->Lanes)
+		{
+			// Only generate for driving lanes
+			bool bHasDriving = false;
+			for (const FLaneSegment& Seg : Lane->Segments)
+			{
+				if (Seg.LaneType == ELaneType::Driving)
+				{
+					bHasDriving = true;
+					break;
+				}
+			}
+			if (!bHasDriving)
+				continue;
+
+			int Side = Lane->GetSide();
+
+			// Generate zone shape for road segments between junctions
+			double PrevDist = 0;
+			for (int s = 0; s < Slots.Num(); s++)
+			{
+				double SlotInput = Slots[s].InputDist();
+				if (SlotInput > PrevDist)
+				{
+					double StartD = PrevDist;
+					double EndD = SlotInput;
+					// Right-side lanes go forward, left-side go backward
+					if (Side == RD_LEFT)
+						Swap(StartD, EndD);
+					if (AActor* Shape = CreateZoneShapeForLane(World, this, Road, Lane, StartD, EndD))
+						MassGraphActors.Add(Shape);
+				}
+				PrevDist = Slots[s].OutputDist();
+			}
+			// Segment after last junction
+			if (PrevDist < Road->Length())
+			{
+				double StartD = PrevDist;
+				double EndD = Road->Length();
+				if (Side == RD_LEFT)
+					Swap(StartD, EndD);
+				if (AActor* Shape = CreateZoneShapeForLane(World, this, Road, Lane, StartD, EndD))
+					MassGraphActors.Add(Shape);
+			}
+		}
+	}
+
+	// Generate zone shapes for junction links (connecting lanes)
+	for (AJunctionActor* Junction : Junctions)
+	{
+		for (int i = 0; i < Junction->Gates.Num(); i++)
+		{
+			FJunctionGate& Gate = Junction->Gates[i];
+			for (int j = 0; j < Gate.Links.Num(); j++)
+			{
+				if (!Gate.Links[j].Road)
+					continue;
+
+				int TargetGateIdx = (i + j) % Junction->Gates.Num();
+
+				// Skip restricted turns
+				if (j != 0 && j != 1 && !Junction->IsTurnAllowed(i, TargetGateIdx))
+					continue;
+
+				ARoadActor* LinkRoad = Gate.Links[j].Road;
+				for (URoadLane* Lane : LinkRoad->Lanes)
+				{
+					bool bHasDriving = false;
+					for (const FLaneSegment& Seg : Lane->Segments)
+					{
+						if (Seg.LaneType == ELaneType::Driving)
+						{
+							bHasDriving = true;
+							break;
+						}
+					}
+					if (!bHasDriving)
+						continue;
+
+					if (AActor* Shape = CreateZoneShapeForLane(World, this, LinkRoad, Lane, 0, LinkRoad->Length()))
+						MassGraphActors.Add(Shape);
+				}
+			}
+		}
+	}
+
+	UE_LOG(LogRoadBuilder, Log, TEXT("Generated %d MassGraph zone shapes"), MassGraphActors.Num());
 }
 
 void ARoadScene::OctreeAddBoundary(URoadBoundary* Boundary)

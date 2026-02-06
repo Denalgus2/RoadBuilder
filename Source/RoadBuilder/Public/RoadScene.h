@@ -4,7 +4,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Math/GenericOctree.h"
-#include "Settings.h"
+#include "RoadBuilderSettings.h"
 #include "GroundActor.h"
 #include "RoadScene.generated.h"
 
@@ -77,6 +77,18 @@ struct FJunctionLink
 
 	UPROPERTY(EditAnywhere, Category = Link)
 	double Radius = 1000;
+};
+
+USTRUCT()
+struct FTurnRestriction
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere, Category = Restriction)
+	int32 FromGateIndex = INDEX_NONE;
+
+	UPROPERTY(EditAnywhere, Category = Restriction)
+	int32 ToGateIndex = INDEX_NONE;
 };
 
 USTRUCT()
@@ -210,12 +222,19 @@ public:
 	int GetRampConnection(FJunctionGate& Gate);
 	FJunctionSlot GetSlot(ARoadActor* Road, double Dist);
 	TArray<FJunctionSlot> GetSlots(ARoadActor* Road);
+	bool IsTurnAllowed(int FromGate, int ToGate) const;
+	void AddTurnRestriction(int FromGate, int ToGate);
+	void RemoveTurnRestriction(int FromGate, int ToGate);
 	ARoadScene* GetScene();
 	void ExportXodr(FXmlNode* XmlNode, int& RoadId, int& ObjectId);
 	virtual void Destroyed();
 	
 	UPROPERTY()
 	TArray<FJunctionGate> Gates;
+
+	UPROPERTY(EditAnywhere, Category = Junction)
+	TArray<FTurnRestriction> TurnRestrictions;
+
 	TArray<FVector> DebugPoints;
 	TArray<FPolyline> DebugCurves;
 };
@@ -236,6 +255,8 @@ public:
 //	FVector2D GetRoadUV(ARoadActor* Road, const FVector& Pos);
 	void Rebuild();
 	void GenerateGrounds(TMap<ARoadActor*, TArray<FJunctionSlot>>& RoadSlots);
+	void GenerateMassGraph(TMap<ARoadActor*, TArray<FJunctionSlot>>& RoadSlots);
+	void CleanupMassGraph();
 	void OctreeAddBoundary(URoadBoundary* Boundary);
 	void OctreeRemoveBoundary(URoadBoundary* Boundary);
 	void OctreeAddRoad(ARoadActor* Road);
@@ -254,6 +275,9 @@ public:
 
 	UPROPERTY()
 	TArray<AGroundActor*> Grounds;
+
+	UPROPERTY()
+	TArray<AActor*> MassGraphActors;
 
 	TOctree2<FRoadOctreeElement, FRoadOctreeSemantics> Octree;
 };

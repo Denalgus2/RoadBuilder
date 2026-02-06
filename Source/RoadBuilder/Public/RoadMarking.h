@@ -87,7 +87,7 @@ public:
 	void SetPoints(TArray<FVector2D>& UVs);
 	FPolyline CreatePolyline();
 
-	UPROPERTY(EditAnywhere, Category = Style, meta = (DisallowedClasses = "PolygonMarkStyle"))
+	UPROPERTY(EditAnywhere, Category = Style, meta = (DisallowedClasses = "/Script/RoadBuilder.PolygonMarkStyle"))
 	UBaseMarkStyle* MarkStyle = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = Style, meta = (EditCondition = "bClosedLoop"))

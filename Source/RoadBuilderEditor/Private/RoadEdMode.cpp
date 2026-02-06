@@ -45,8 +45,10 @@ bool FRoadTool::EndModify()
 void FRoadTool::Reset()
 {
 	FEditorViewportClient* Client = GLevelEditorModeTools().GetFocusedViewportClient();
-	Client->Invalidate();
-	GetEditWidget()->SetEditNone();
+	if (Client)
+		Client->Invalidate();
+	if (SRoadEdit* Widget = GetEditWidget())
+		Widget->SetEditNone();
 }
 
 ARoadScene* FRoadTool::GetScene() const
@@ -1571,7 +1573,8 @@ void FEdModeRoad::SetToolIndex(int Index)
 	static_cast<FRoadTool*>(Tools[Index])->Reset();
 	SetCurrentTool(Tools[Index]);
 	FEditorViewportClient* Client = GLevelEditorModeTools().GetFocusedViewportClient();
-	Client->Invalidate();
+	if (Client)
+		Client->Invalidate();
 }
 
 void FEdModeRoad::OnUndo(const FTransactionContext& InTransactionContext, bool bSucceeded)
@@ -1629,6 +1632,8 @@ void FEdModeRoad::PostUndo()
 bool FEdModeRoad::GetCursor(EMouseCursor::Type& OutCursor) const
 {
 	FEditorViewportClient* Client = GLevelEditorModeTools().GetFocusedViewportClient();
+	if (!Client || !Client->Viewport)
+		return false;
 	HHitProxy* HitProxy = Client->Viewport->GetHitProxy(Client->GetCachedMouseX(), Client->GetCachedMouseY());
 	if (HitProxy)
 	{

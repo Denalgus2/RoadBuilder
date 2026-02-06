@@ -7,7 +7,7 @@
 #include "IStructureDetailsView.h"
 #include "IDetailCustomization.h"
 #include "RoadScene.h"
-#include "Settings.h"
+#include "RoadBuilderSettings.h"
 
 class FEdModeRoad;
 class SRoadEdit : public SCompoundWidget

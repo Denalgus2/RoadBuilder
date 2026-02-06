@@ -29,8 +29,9 @@ namespace UnrealBuildTool.Rules
 					"MeshDescription",
 					"PCG",
 					"ProceduralMeshComponent",
-					"StaticMeshDescription",
+				"StaticMeshDescription",
 					"XmlParser",
+					"ZoneGraph",
 					// ... add other public dependencies that you statically link with here ...
 				}
 				);

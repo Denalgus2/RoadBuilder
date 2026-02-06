@@ -1,7 +1,7 @@
 // Publisher: Fullike (https://github.com/fullike)
 // Copyright 2024. All Rights Reserved.
 
-#include "Settings.h"
+#include "RoadBuilderSettings.h"
 #include "Kismet/GameplayStatics.h"
 #if WITH_EDITOR
 #include "RoadBuilderEditor/Public/RoadEdMode.h"
@@ -24,6 +24,7 @@ USettings_Global::USettings_Global(const FObjectInitializer& ObjectInitializer) 
 	DefaultGoreMarking = LoadObject<UPolygonMarkStyle>(nullptr, TEXT("/RoadBuilder/MarkStyles/PolygonMark/ChevronRegion.ChevronRegion'"));
 	BuildJunctions = 1;
 	BuildProps = 1;
+	BuildMassGraph = 0;
 	DisplayGateRadianPoints = 0;
 }
 
